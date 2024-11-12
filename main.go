@@ -39,6 +39,9 @@ func main() {
 	http.HandleFunc("/api/reports/top-players", topPlayersBySeasonHandler)
 	http.HandleFunc("/api/reports/team-season-comparison", teamSeasonComparisonHandler)
 	http.HandleFunc("/api/reports/record-break-prediction", recordBreakPredictionHandler)
+	http.HandleFunc("/api/players/add", addPlayerHandler)
+	http.HandleFunc("/api/player-stats/add", addPlayerGameStatsHandler)
+	http.HandleFunc("/api/recruits/add", addRecruitHandler)
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
@@ -109,28 +112,12 @@ func scheduleHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		schedules, err := services.GetSchedules()
 		if err != nil {
+			fmt.Println("Erro ao obter calendário:", err) // Log detalhado
 			http.Error(w, "Erro ao obter calendário", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(schedules)
-
-	case http.MethodPost:
-		var schedule models.Schedule
-		err := json.NewDecoder(r.Body).Decode(&schedule)
-		if err != nil {
-			fmt.Println("Erro ao decodificar JSON do jogo:", err) // Log do erro
-			http.Error(w, "Erro ao decodificar jogo", http.StatusBadRequest)
-			return
-		}
-		err = services.AddSchedule(schedule)
-		if err != nil {
-			fmt.Println("Erro ao adicionar jogo no banco de dados:", err) // Log do erro
-			http.Error(w, "Erro ao adicionar jogo", http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Jogo adicionado com sucesso"})
 	}
 }
 
@@ -439,4 +426,84 @@ func recordBreakPredictionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(prediction)
+}
+
+func addPlayerHandler(w http.ResponseWriter, r *http.Request) {
+	var player models.Player
+
+	err := json.NewDecoder(r.Body).Decode(&player)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar dados do jogador", http.StatusBadRequest)
+		return
+	}
+
+	err = services.AddPlayer(player)
+	if err != nil {
+		http.Error(w, "Erro ao adicionar jogador", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Jogador adicionado com sucesso"})
+}
+
+func addPlayerGameStatsHandler(w http.ResponseWriter, r *http.Request) {
+	var stats models.PlayerGameStats
+
+	err := json.NewDecoder(r.Body).Decode(&stats)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar estatísticas do jogo", http.StatusBadRequest)
+		return
+	}
+
+	err = services.AddPlayerGameStats(stats)
+	if err != nil {
+		http.Error(w, "Erro ao adicionar estatísticas do jogo", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Estatísticas do jogo adicionadas com sucesso"})
+}
+
+func addRecruitHandler(w http.ResponseWriter, r *http.Request) {
+	var recruit models.Recruit
+
+	// Decodificar JSON do corpo da requisição
+	err := json.NewDecoder(r.Body).Decode(&recruit)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar dados do recruta", http.StatusBadRequest)
+		return
+	}
+
+	// Inserir recruta na tabela recruits
+	err = services.AddRecruit(recruit)
+	if err != nil {
+		http.Error(w, "Erro ao adicionar recruta", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Recruta adicionado com sucesso"})
+}
+
+func addRecruitedPlayerHandler(w http.ResponseWriter, r *http.Request) {
+	var recruit models.Recruit
+
+	// Decodificar JSON do corpo da requisição
+	err := json.NewDecoder(r.Body).Decode(&recruit)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar dados do recruta", http.StatusBadRequest)
+		return
+	}
+
+	// Chamar a função de serviço para adicionar o recruta
+	err = services.AddRecruit(recruit)
+	if err != nil {
+		http.Error(w, "Erro ao adicionar recruta", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Recruta adicionado com sucesso"})
 }

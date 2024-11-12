@@ -9,21 +9,20 @@ import (
 
 // GetSchedules retorna todos os jogos do calendário
 func GetSchedules() ([]models.Schedule, error) {
-	rows, err := database.DB.Query("SELECT * FROM schedule")
+	var schedules []models.Schedule
+
+	query := "SELECT id, team_name, year, week, opponent, team_ranking, opponent_ranking, team_points, opponent_points, result, site FROM schedule"
+	rows, err := database.DB.Query(query)
 	if err != nil {
+		fmt.Println("Erro na consulta SQL para obter o calendário:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var schedules []models.Schedule
 	for rows.Next() {
 		var schedule models.Schedule
-		err := rows.Scan(
-			&schedule.ID, &schedule.TeamID, &schedule.TeamName, &schedule.Year, &schedule.Week,
-			&schedule.Opponent, &schedule.TeamRanking, &schedule.OpponentRanking, &schedule.TeamPoints,
-			&schedule.OpponentPoints, &schedule.Result, &schedule.Site,
-		)
-		if err != nil {
+		if err := rows.Scan(&schedule.ID, &schedule.TeamName, &schedule.Year, &schedule.Week, &schedule.Opponent, &schedule.TeamRanking, &schedule.OpponentRanking, &schedule.TeamPoints, &schedule.OpponentPoints, &schedule.Result, &schedule.Site); err != nil {
+			fmt.Println("Erro ao escanear resultados:", err)
 			return nil, err
 		}
 		schedules = append(schedules, schedule)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"dynastyTracker/database"
 	"dynastyTracker/models"
+	"fmt"
 )
 
 // GetPlayers retorna a lista de todos os jogadores
@@ -27,12 +28,39 @@ func GetPlayers() ([]models.Player, error) {
 	return players, nil
 }
 
+type Player struct {
+	Name      string `json:"name"`
+	Position  string `json:"position"`
+	Overall   int    `json:"overall"`
+	ClassYear string `json:"class_year"`
+	TeamID    int    `json:"team_id"`
+}
+
 // AddPlayer adiciona um novo jogador ao banco de dados
 func AddPlayer(player models.Player) error {
-	_, err := database.DB.Exec(`INSERT INTO players (name, position, overall, games_played, games_started, snaps_played, class_year, team_id)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		player.Name, player.Position, player.Overall, player.GamesPlayed, player.GamesStarted, player.SnapsPlayed, player.ClassYear, player.TeamID)
-	return err
+	// Verificar o limite do elenco
+	var playerCount int
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM players WHERE team_id = ?", player.TeamID).Scan(&playerCount)
+	if err != nil {
+		fmt.Printf("Erro ao contar jogadores: %v\n", err)
+		return err
+	}
+
+	if playerCount >= 85 {
+		return fmt.Errorf("O elenco atingiu o limite máximo de 85 jogadores")
+	}
+
+	// Inserir o jogador se o limite não foi atingido
+	query := `
+        INSERT INTO players (name, position, overall, games_played, games_started, snaps_played, class_year, team_id, recruitment_source)
+        VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?);
+    `
+	_, err = database.DB.Exec(query, player.Name, player.Position, player.Overall, player.ClassYear, player.TeamID, player.RecruitmentSource)
+	if err != nil {
+		fmt.Printf("Erro ao adicionar jogador: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 // GetPlayer obtém um jogador específico pelo ID
@@ -92,4 +120,45 @@ func GetPlayersWithFilters(position string, teamID int) ([]models.Player, error)
 	}
 
 	return players, nil
+}
+
+func PromoteRecruits(currentYear int) error {
+	recruitmentYear := currentYear - 1
+
+	rows, err := database.DB.Query(`
+        SELECT recruit_id, player_name, position, overall, class, team_id, recruitment_source
+        FROM recruits
+        WHERE recruitment_year = ?
+    `, recruitmentYear)
+	if err != nil {
+		fmt.Printf("Erro ao buscar recrutas: %v\n", err)
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var recruit models.Recruit
+		err := rows.Scan(&recruit.RecruitID, &recruit.PlayerName, &recruit.Position, &recruit.Overall, &recruit.Class, &recruit.TeamID, &recruit.RecruitmentSource)
+		if err != nil {
+			fmt.Printf("Erro ao escanear recruta: %v\n", err)
+			return err
+		}
+
+		_, err = database.DB.Exec(`
+            INSERT INTO players (name, position, overall, games_played, games_started, snaps_played, class_year, team_id, recruitment_source)
+            VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?);
+        `, recruit.PlayerName, recruit.Position, recruit.Overall, recruit.Class, recruit.TeamID, recruit.RecruitmentSource)
+		if err != nil {
+			fmt.Printf("Erro ao promover recruta: %v\n", err)
+			return err
+		}
+	}
+
+	_, err = database.DB.Exec("DELETE FROM recruits WHERE recruitment_year = ?", recruitmentYear)
+	if err != nil {
+		fmt.Printf("Erro ao remover recrutas promovidos: %v\n", err)
+		return err
+	}
+
+	return nil
 }
