@@ -60,3 +60,36 @@ func UpdatePlayer(player models.Player) error {
 		player.SnapsPlayed, player.ClassYear, player.TeamID, player.PlayerID)
 	return err
 }
+
+func GetPlayersWithFilters(position string, teamID int) ([]models.Player, error) {
+	query := "SELECT * FROM players WHERE 1=1"
+	var args []interface{}
+
+	if position != "" {
+		query += " AND position = ?"
+		args = append(args, position)
+	}
+	if teamID > 0 {
+		query += " AND team_id = ?"
+		args = append(args, teamID)
+	}
+
+	rows, err := database.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var players []models.Player
+	for rows.Next() {
+		var player models.Player
+		err := rows.Scan(&player.PlayerID, &player.Name, &player.Position, &player.Overall, &player.GamesPlayed,
+			&player.GamesStarted, &player.SnapsPlayed, &player.ClassYear, &player.TeamID)
+		if err != nil {
+			return nil, err
+		}
+		players = append(players, player)
+	}
+
+	return players, nil
+}

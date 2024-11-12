@@ -27,6 +27,9 @@ func main() {
 	http.HandleFunc("/api/schedule/", scheduleItemHandler) // Com ID específico
 	http.HandleFunc("/api/records", recordsHandler)
 	http.HandleFunc("/api/records/", recordHandler) // Com ID específico
+	http.HandleFunc("/api/schedule/search", scheduleSearchHandler)
+	http.HandleFunc("/api/players/search", playerSearchHandler)
+	http.HandleFunc("/api/records/search", recordSearchHandler)
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
@@ -221,4 +224,71 @@ func extractID(path string) int {
 		return 0 // Retorna 0 caso não consiga converter o ID
 	}
 	return id
+}
+
+func scheduleSearchHandler(w http.ResponseWriter, r *http.Request) {
+	yearParam := r.URL.Query().Get("year")
+	weekParam := r.URL.Query().Get("week")
+
+	var year, week int
+	var err error
+
+	if yearParam != "" {
+		year, err = strconv.Atoi(yearParam)
+		if err != nil {
+			http.Error(w, "Parâmetro 'year' inválido", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if weekParam != "" {
+		week, err = strconv.Atoi(weekParam)
+		if err != nil {
+			http.Error(w, "Parâmetro 'week' inválido", http.StatusBadRequest)
+			return
+		}
+	}
+
+	schedules, err := services.GetSchedulesWithFilters(year, week)
+	if err != nil {
+		http.Error(w, "Erro ao buscar jogos", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(schedules)
+
+}
+
+func playerSearchHandler(w http.ResponseWriter, r *http.Request) {
+	position := r.URL.Query().Get("position")
+	teamIDParam := r.URL.Query().Get("team_id")
+
+	var teamID int
+	if teamIDParam != "" {
+		teamID, _ = strconv.Atoi(teamIDParam)
+	}
+
+	players, err := services.GetPlayersWithFilters(position, teamID)
+	if err != nil {
+		http.Error(w, "Erro ao buscar jogadores", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(players)
+}
+
+func recordSearchHandler(w http.ResponseWriter, r *http.Request) {
+	school := r.URL.Query().Get("school")
+	playerName := r.URL.Query().Get("player_name")
+
+	records, err := services.GetHistoricalRecordsWithFilters(school, playerName)
+	if err != nil {
+		http.Error(w, "Erro ao buscar recordes", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(records)
 }

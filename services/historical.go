@@ -90,3 +90,40 @@ func UpdateHistoricalRecord(record models.HistoricalRecord) error {
 		record.YardsFromScrimmage, record.AvgYardsPerPlay, record.ScrimmageTDs, record.RecordID)
 	return err
 }
+
+func GetHistoricalRecordsWithFilters(school string, playerName string) ([]models.HistoricalRecord, error) {
+	query := "SELECT * FROM historicalrecords WHERE 1=1"
+	var args []interface{}
+
+	if school != "" {
+		query += " AND school = ?"
+		args = append(args, school)
+	}
+	if playerName != "" {
+		query += " AND player_name = ?"
+		args = append(args, playerName)
+	}
+
+	rows, err := database.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []models.HistoricalRecord
+	for rows.Next() {
+		var record models.HistoricalRecord
+		err := rows.Scan(&record.RecordID, &record.School, &record.PlayerName, &record.YearStart, &record.YearEnd,
+			&record.Completions, &record.Attempts, &record.CompletionPercentage, &record.PassingYards,
+			&record.YardsPerAttempt, &record.Touchdowns, &record.Interceptions, &record.PasserRating,
+			&record.RushAttempts, &record.RushYards, &record.YardsPerCarry, &record.RushTDs,
+			&record.Receptions, &record.ReceivingYards, &record.YardsPerCatch, &record.ReceivingTDs,
+			&record.PlaysFromScrimmage, &record.YardsFromScrimmage, &record.AvgYardsPerPlay, &record.ScrimmageTDs)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+
+	return records, nil
+}

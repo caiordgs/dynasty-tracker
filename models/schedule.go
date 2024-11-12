@@ -3,7 +3,7 @@ package models
 type Schedule struct {
 	ID              int    `json:"id"`
 	TeamID          int    `json:"team_id"`
-	TeamName        string `json:"team_name"` // Verifique esta linha
+	TeamName        string `json:"team_name"`
 	Year            int    `json:"year"`
 	Week            int    `json:"week"`
 	Opponent        string `json:"opponent"`
