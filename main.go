@@ -30,6 +30,8 @@ func main() {
 	http.HandleFunc("/api/schedule/search", scheduleSearchHandler)
 	http.HandleFunc("/api/players/search", playerSearchHandler)
 	http.HandleFunc("/api/records/search", recordSearchHandler)
+	http.HandleFunc("/api/reports/team-performance", teamPerformanceHandler)
+	http.HandleFunc("/api/reports/player-stats", playerStatsHandler)
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
@@ -215,7 +217,6 @@ func recordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Função para extrair o ID do URL
 func extractID(path string) int {
 	parts := strings.Split(path, "/")
 	idStr := parts[len(parts)-1]
@@ -291,4 +292,32 @@ func recordSearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(records)
+}
+
+func teamPerformanceHandler(w http.ResponseWriter, r *http.Request) {
+	reports, err := services.GetTeamPerformance()
+	if err != nil {
+		http.Error(w, "Erro ao gerar relatório de desempenho do time", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(reports)
+}
+
+func playerStatsHandler(w http.ResponseWriter, r *http.Request) {
+	position := r.URL.Query().Get("position")
+	if position == "" {
+		http.Error(w, "Parâmetro 'position' é obrigatório", http.StatusBadRequest)
+		return
+	}
+
+	reports, err := services.GetPlayerStatsByPosition(position)
+	if err != nil {
+		http.Error(w, "Erro ao gerar relatório de estatísticas dos jogadores", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(reports)
 }
