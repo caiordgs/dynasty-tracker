@@ -76,3 +76,17 @@ func GetHistoricalRecords() ([]models.HistoricalRecord, error) {
 
 	return records, nil
 }
+
+func UpdateHistoricalRecord(record models.HistoricalRecord) error {
+	_, err := database.DB.Exec(`UPDATE historicalrecords SET school=?, player_name=?, year_start=?, year_end=?, 
+        completions=?, attempts=?, completion_percentage=?, passing_yards=?, yards_per_attempt=?, touchdowns=?, 
+        interceptions=?, passer_rating=?, rush_attempts=?, rush_yards=?, yards_per_carry=?, rush_tds=?, 
+        receptions=?, receiving_yards=?, yards_per_catch=?, receiving_tds=?, plays_from_scrimmage=?, 
+        yards_from_scrimmage=?, avg_yards_per_play=?, scrimmage_tds=? WHERE record_id=?`,
+		record.School, record.PlayerName, record.YearStart, record.YearEnd, record.Completions, record.Attempts,
+		record.CompletionPercentage, record.PassingYards, record.YardsPerAttempt, record.Touchdowns, record.Interceptions,
+		record.PasserRating, record.RushAttempts, record.RushYards, record.YardsPerCarry, record.RushTDs,
+		record.Receptions, record.ReceivingYards, record.YardsPerCatch, record.ReceivingTDs, record.PlaysFromScrimmage,
+		record.YardsFromScrimmage, record.AvgYardsPerPlay, record.ScrimmageTDs, record.RecordID)
+	return err
+}

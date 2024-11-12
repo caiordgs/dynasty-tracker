@@ -60,3 +60,11 @@ func DeleteSchedule(id int) error {
 	_, err := database.DB.Exec("DELETE FROM schedule WHERE id = ?", id)
 	return err
 }
+
+func UpdateSchedule(schedule models.Schedule) error {
+	_, err := database.DB.Exec(`UPDATE schedule SET team_id=?, team_name=?, year=?, week=?, opponent=?, team_ranking=?, 
+        opponent_ranking=?, team_points=?, opponent_points=?, result=?, site=? WHERE id=?`,
+		schedule.TeamID, schedule.TeamName, schedule.Year, schedule.Week, schedule.Opponent, schedule.TeamRanking,
+		schedule.OpponentRanking, schedule.TeamPoints, schedule.OpponentPoints, schedule.Result, schedule.Site, schedule.ID)
+	return err
+}

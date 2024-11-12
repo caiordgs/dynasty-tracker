@@ -62,7 +62,6 @@ func playersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Handler para operações com um jogador específico
 func playerHandler(w http.ResponseWriter, r *http.Request) {
 	id := extractID(r.URL.Path)
 	switch r.Method {
@@ -75,13 +74,21 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(player)
 
-	case http.MethodDelete:
-		err := services.DeletePlayer(id)
+	case http.MethodPut: // Adicionando a funcionalidade PUT
+		var player models.Player
+		err := json.NewDecoder(r.Body).Decode(&player)
 		if err != nil {
-			http.Error(w, "Erro ao excluir jogador", http.StatusInternalServerError)
+			http.Error(w, "Erro ao decodificar jogador", http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
+		player.PlayerID = id // Certifique-se de usar o ID correto
+		err = services.UpdatePlayer(player)
+		if err != nil {
+			http.Error(w, "Erro ao atualizar jogador", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Jogador atualizado com sucesso"})
 	}
 }
 
@@ -115,7 +122,6 @@ func scheduleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Handler para operações com um jogo específico
 func scheduleItemHandler(w http.ResponseWriter, r *http.Request) {
 	id := extractID(r.URL.Path)
 	switch r.Method {
@@ -128,13 +134,21 @@ func scheduleItemHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(schedule)
 
-	case http.MethodDelete:
-		err := services.DeleteSchedule(id)
+	case http.MethodPut: // Adicionando a funcionalidade PUT
+		var schedule models.Schedule
+		err := json.NewDecoder(r.Body).Decode(&schedule)
 		if err != nil {
-			http.Error(w, "Erro ao excluir jogo", http.StatusInternalServerError)
+			http.Error(w, "Erro ao decodificar jogo", http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
+		schedule.ID = id // Certifique-se de usar o ID correto
+		err = services.UpdateSchedule(schedule)
+		if err != nil {
+			http.Error(w, "Erro ao atualizar jogo", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Jogo atualizado com sucesso"})
 	}
 }
 
@@ -168,7 +182,6 @@ func recordsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Handler para operações com um recorde específico
 func recordHandler(w http.ResponseWriter, r *http.Request) {
 	id := extractID(r.URL.Path)
 	switch r.Method {
@@ -181,13 +194,21 @@ func recordHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(record)
 
-	case http.MethodDelete:
-		err := services.DeleteHistoricalRecord(id)
+	case http.MethodPut: // Adicionando a funcionalidade PUT
+		var record models.HistoricalRecord
+		err := json.NewDecoder(r.Body).Decode(&record)
 		if err != nil {
-			http.Error(w, "Erro ao excluir recorde", http.StatusInternalServerError)
+			http.Error(w, "Erro ao decodificar recorde", http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
+		record.RecordID = id // Certifique-se de usar o ID correto
+		err = services.UpdateHistoricalRecord(record)
+		if err != nil {
+			http.Error(w, "Erro ao atualizar recorde", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Recorde atualizado com sucesso"})
 	}
 }
 

@@ -52,3 +52,11 @@ func DeletePlayer(id int) error {
 	_, err := database.DB.Exec("DELETE FROM players WHERE player_id = ?", id)
 	return err
 }
+
+func UpdatePlayer(player models.Player) error {
+	_, err := database.DB.Exec(`UPDATE players SET name=?, position=?, overall=?, games_played=?, games_started=?, 
+        snaps_played=?, class_year=?, team_id=? WHERE player_id=?`,
+		player.Name, player.Position, player.Overall, player.GamesPlayed, player.GamesStarted,
+		player.SnapsPlayed, player.ClassYear, player.TeamID, player.PlayerID)
+	return err
+}
