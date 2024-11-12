@@ -32,6 +32,13 @@ func main() {
 	http.HandleFunc("/api/records/search", recordSearchHandler)
 	http.HandleFunc("/api/reports/team-performance", teamPerformanceHandler)
 	http.HandleFunc("/api/reports/player-stats", playerStatsHandler)
+	http.HandleFunc("/api/reports/season-summary", seasonSummaryHandler)
+	http.HandleFunc("/api/reports/comparison-records", comparisonWithHistoricalRecordsHandler)
+	http.HandleFunc("/api/reports/player-records-comparison", playerRecordsComparisonHandler)
+	http.HandleFunc("/api/reports/player-career-progression", playerCareerProgressionHandler)
+	http.HandleFunc("/api/reports/top-players", topPlayersBySeasonHandler)
+	http.HandleFunc("/api/reports/team-season-comparison", teamSeasonComparisonHandler)
+	http.HandleFunc("/api/reports/record-break-prediction", recordBreakPredictionHandler)
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
@@ -295,13 +302,11 @@ func recordSearchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func teamPerformanceHandler(w http.ResponseWriter, r *http.Request) {
-	reports, err := services.GetTeamPerformance()
+	reports, err := services.GetTeamPerformanceBySeason()
 	if err != nil {
-		http.Error(w, "Erro ao gerar relatório de desempenho do time", http.StatusInternalServerError)
+		http.Error(w, "Erro ao obter desempenho do time", http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(reports)
 }
 
@@ -320,4 +325,118 @@ func playerStatsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(reports)
+}
+
+func seasonSummaryHandler(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	if yearStr == "" {
+		http.Error(w, "Ano é necessário", http.StatusBadRequest)
+		return
+	}
+
+	// Converte o ano de string para int
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		http.Error(w, "Ano inválido", http.StatusBadRequest)
+		return
+	}
+
+	reports, err := services.GetSeasonSummary(year)
+	if err != nil {
+		http.Error(w, "Erro ao obter resumo da temporada", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(reports)
+}
+
+func comparisonWithHistoricalRecordsHandler(w http.ResponseWriter, r *http.Request) {
+	reports, err := services.GetComparisonWithHistoricalRecords()
+	if err != nil {
+		http.Error(w, "Erro ao obter comparação com recordes históricos", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(reports)
+}
+
+func playerRecordsComparisonHandler(w http.ResponseWriter, r *http.Request) {
+	comparisons, err := services.ComparePlayerStatsWithRecords()
+	if err != nil {
+		http.Error(w, "Erro ao comparar estatísticas dos jogadores com recordes", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(comparisons)
+}
+
+func playerCareerProgressionHandler(w http.ResponseWriter, r *http.Request) {
+	playerIDStr := r.URL.Query().Get("player_id")
+	playerID, err := strconv.Atoi(playerIDStr)
+	if err != nil {
+		http.Error(w, "ID do jogador inválido", http.StatusBadRequest)
+		return
+	}
+
+	yearlyStats, err := services.GetPlayerCareerProgression(playerID)
+	if err != nil {
+		http.Error(w, "Erro ao obter evolução de carreira", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(yearlyStats)
+}
+
+func topPlayersBySeasonHandler(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	category := r.URL.Query().Get("category")
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		http.Error(w, "Ano inválido", http.StatusBadRequest)
+		return
+	}
+
+	topPlayers, err := services.GetTopPlayersBySeason(year, category)
+	if err != nil {
+		http.Error(w, "Erro ao obter ranking de jogadores", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(topPlayers)
+}
+
+func teamSeasonComparisonHandler(w http.ResponseWriter, r *http.Request) {
+	teamIDStr := r.URL.Query().Get("team_id")
+	teamID, err := strconv.Atoi(teamIDStr)
+	if err != nil {
+		http.Error(w, "ID do time inválido", http.StatusBadRequest)
+		return
+	}
+
+	seasonStats, err := services.GetTeamSeasonComparison(teamID)
+	if err != nil {
+		http.Error(w, "Erro ao obter comparação de temporadas", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(seasonStats)
+}
+
+func recordBreakPredictionHandler(w http.ResponseWriter, r *http.Request) {
+	playerIDStr := r.URL.Query().Get("player_id")
+	seasonsRemainingStr := r.URL.Query().Get("seasons_remaining")
+
+	playerID, err := strconv.Atoi(playerIDStr)
+	if err != nil {
+		http.Error(w, "ID do jogador inválido", http.StatusBadRequest)
+		return
+	}
+
+	seasonsRemaining, err := strconv.Atoi(seasonsRemainingStr)
+	if err != nil {
+		http.Error(w, "Número de temporadas restantes inválido", http.StatusBadRequest)
+		return
+	}
+
+	prediction, err := services.PredictRecordBreak(playerID, seasonsRemaining)
+	if err != nil {
+		http.Error(w, "Erro ao gerar predição de quebra de recorde", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(prediction)
 }
