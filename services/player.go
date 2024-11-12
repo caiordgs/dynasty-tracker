@@ -9,18 +9,20 @@ import (
 
 // GetPlayers retorna a lista de todos os jogadores
 func GetPlayers() ([]models.Player, error) {
-	rows, err := database.DB.Query("SELECT * FROM players")
+	var players []models.Player
+
+	query := "SELECT player_id, name, position, overall, class_year, team_id FROM players"
+	rows, err := database.DB.Query(query)
 	if err != nil {
+		fmt.Println("Erro ao executar a consulta SQL:", err) // Log do erro SQL
 		return nil, err
 	}
 	defer rows.Close()
 
-	var players []models.Player
 	for rows.Next() {
 		var player models.Player
-		err := rows.Scan(&player.PlayerID, &player.Name, &player.Position, &player.Overall,
-			&player.GamesPlayed, &player.GamesStarted, &player.SnapsPlayed, &player.ClassYear, &player.TeamID)
-		if err != nil {
+		if err := rows.Scan(&player.PlayerID, &player.Name, &player.Position, &player.Overall, &player.ClassYear, &player.TeamID); err != nil {
+			fmt.Println("Erro ao escanear dados do jogador:", err) // Log de erro de escaneamento
 			return nil, err
 		}
 		players = append(players, player)

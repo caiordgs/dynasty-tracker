@@ -8,9 +8,10 @@ type Player struct {
 	GamesPlayed       int    `json:"games_played"`
 	GamesStarted      int    `json:"games_started"`
 	SnapsPlayed       int    `json:"snaps_played"`
-	ClassYear         string `json:"class_year"`
+	ClassYear         string `json:"class_year"`       // Freshman, Sophomore, etc.
+	RecruitmentYear   int    `json:"recruitment_year"` // Ano de recrutamento
 	TeamID            int    `json:"team_id"`
-	RecruitmentSource string `json:"recruitment_source"` // Fonte de recrutamento: "High School" ou "Transfer Portal"
+	RecruitmentSource string `json:"recruitment_source"` // Fonte de recrutamento
 }
 
 type PlayerGameStats struct {

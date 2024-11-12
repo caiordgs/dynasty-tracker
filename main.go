@@ -21,15 +21,27 @@ func main() {
 	}
 
 	// Definir rotas para cada recurso
-	http.HandleFunc("/api/players", playersHandler)
-	http.HandleFunc("/api/players/", playerHandler) // Com ID específico
-	http.HandleFunc("/api/schedule", scheduleHandler)
-	http.HandleFunc("/api/schedule/", scheduleItemHandler) // Com ID específico
-	http.HandleFunc("/api/records", recordsHandler)
-	http.HandleFunc("/api/records/", recordHandler) // Com ID específico
+	// Jogadores
+	http.HandleFunc("/api/players", func(w http.ResponseWriter, r *http.Request) {
+		enableCors(w, r) // Sem o ponteiro, passando diretamente o http.ResponseWriter
+		playersHandler(w, r)
+	})
+	http.HandleFunc("/api/players/", playerHandler) // Busca jogador por ID
+
+	// Calendário
+	http.HandleFunc("/api/schedule", scheduleHandler)      // Lista e adiciona jogos no calendário
+	http.HandleFunc("/api/schedule/", scheduleItemHandler) // Busca jogo do calendário por ID
+
+	// Recordes Históricos
+	http.HandleFunc("/api/records", recordsHandler) // Lista e adiciona recordes históricos
+	http.HandleFunc("/api/records/", recordHandler) // Busca recorde histórico por ID
+
+	// Consultas Específicas
 	http.HandleFunc("/api/schedule/search", scheduleSearchHandler)
 	http.HandleFunc("/api/players/search", playerSearchHandler)
 	http.HandleFunc("/api/records/search", recordSearchHandler)
+
+	// Relatórios
 	http.HandleFunc("/api/reports/team-performance", teamPerformanceHandler)
 	http.HandleFunc("/api/reports/player-stats", playerStatsHandler)
 	http.HandleFunc("/api/reports/season-summary", seasonSummaryHandler)
@@ -39,16 +51,32 @@ func main() {
 	http.HandleFunc("/api/reports/top-players", topPlayersBySeasonHandler)
 	http.HandleFunc("/api/reports/team-season-comparison", teamSeasonComparisonHandler)
 	http.HandleFunc("/api/reports/record-break-prediction", recordBreakPredictionHandler)
-	http.HandleFunc("/api/players/add", addPlayerHandler)
-	http.HandleFunc("/api/player-stats/add", addPlayerGameStatsHandler)
+
+	// Recrutas
 	http.HandleFunc("/api/recruits/add", addRecruitHandler)
+	http.HandleFunc("/api/players/add", func(w http.ResponseWriter, r *http.Request) {
+		enableCors(w, r) // Sem o ponteiro, passando diretamente o http.ResponseWriter
+		addPlayerHandler(w, r)
+	})
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func enableCors(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Caso a requisição seja do tipo OPTIONS, retorna imediatamente
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+}
+
 // Handler para listar ou adicionar jogadores
+// playersHandler no backend
 func playersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -57,9 +85,12 @@ func playersHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Erro ao obter jogadores", http.StatusInternalServerError)
 			return
 		}
+
+		// Log para ver os dados antes de enviar
+		fmt.Println("Jogadores encontrados:", players)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(players)
-
 	case http.MethodPost:
 		var player models.Player
 		err := json.NewDecoder(r.Body).Decode(&player)
