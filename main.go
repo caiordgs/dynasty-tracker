@@ -58,6 +58,8 @@ func main() {
 		enableCors(w, r) // Sem o ponteiro, passando diretamente o http.ResponseWriter
 		addPlayerHandler(w, r)
 	})
+	http.HandleFunc("/api/teams", teamsHandler)             // Para acessar os times
+	http.HandleFunc("/api/teams/assign", assignTeamHandler) // Para atribuir um time a um técnico
 
 	// Iniciar o servidor
 	fmt.Println("Servidor iniciado na porta 8080")
@@ -461,13 +463,24 @@ func recordBreakPredictionHandler(w http.ResponseWriter, r *http.Request) {
 
 func addPlayerHandler(w http.ResponseWriter, r *http.Request) {
 	var player models.Player
-
+	// Decodificar o corpo da requisição JSON para a estrutura Player
 	err := json.NewDecoder(r.Body).Decode(&player)
 	if err != nil {
 		http.Error(w, "Erro ao decodificar dados do jogador", http.StatusBadRequest)
 		return
 	}
 
+	// Buscar o team_id com base no nome do time
+	teamID, err := getTeamIDByName(player.TeamName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Atualizar o player com o team_id
+	player.TeamID = teamID
+
+	// Inserir o jogador no banco de dados
 	err = services.AddPlayer(player)
 	if err != nil {
 		http.Error(w, "Erro ao adicionar jogador", http.StatusInternalServerError)
@@ -537,4 +550,37 @@ func addRecruitedPlayerHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Recruta adicionado com sucesso"})
+}
+
+func teamsHandler(w http.ResponseWriter, r *http.Request) {
+	teams, err := services.GetTeams()
+	if err != nil {
+		http.Error(w, "Erro ao obter os times", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(teams)
+}
+
+func assignTeamHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		// Obter dados de atribuição do técnico ao time
+		var assignment models.TeamAssignment
+		err := json.NewDecoder(r.Body).Decode(&assignment)
+		if err != nil {
+			http.Error(w, "Erro ao decodificar dados da atribuição", http.StatusBadRequest)
+			return
+		}
+
+		// Inserir dados na tabela team_assignments
+		err = services.AssignTeamToCoach(assignment)
+		if err != nil {
+			http.Error(w, "Erro ao atribuir time", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Atribuição realizada com sucesso!"})
+	}
 }

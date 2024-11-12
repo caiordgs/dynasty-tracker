@@ -40,9 +40,19 @@ type Player struct {
 
 // AddPlayer adiciona um novo jogador ao banco de dados
 func AddPlayer(player models.Player) error {
+	// Buscar o team_id com base no nome do time
+	teamID, err := getTeamIDByName(player.TeamName)
+	if err != nil {
+		fmt.Printf("Erro ao buscar o team_id: %v\n", err)
+		return err
+	}
+
+	// Atualizar o player com o team_id encontrado
+	player.TeamID = teamID
+
 	// Verificar o limite do elenco
 	var playerCount int
-	err := database.DB.QueryRow("SELECT COUNT(*) FROM players WHERE team_id = ?", player.TeamID).Scan(&playerCount)
+	err = database.DB.QueryRow("SELECT COUNT(*) FROM players WHERE team_id = ?", player.TeamID).Scan(&playerCount)
 	if err != nil {
 		fmt.Printf("Erro ao contar jogadores: %v\n", err)
 		return err
@@ -84,7 +94,17 @@ func DeletePlayer(id int) error {
 }
 
 func UpdatePlayer(player models.Player) error {
-	_, err := database.DB.Exec(`UPDATE players SET name=?, position=?, overall=?, games_played=?, games_started=?, 
+	// Buscar o team_id com base no nome do time
+	teamID, err := getTeamIDByName(player.TeamName)
+	if err != nil {
+		fmt.Printf("Erro ao buscar o team_id: %v\n", err)
+		return err
+	}
+
+	// Atualizar o player com o novo team_id
+	player.TeamID = teamID
+
+	_, err = database.DB.Exec(`UPDATE players SET name=?, position=?, overall=?, games_played=?, games_started=?, 
         snaps_played=?, class_year=?, team_id=? WHERE player_id=?`,
 		player.Name, player.Position, player.Overall, player.GamesPlayed, player.GamesStarted,
 		player.SnapsPlayed, player.ClassYear, player.TeamID, player.PlayerID)
@@ -163,4 +183,18 @@ func PromoteRecruits(currentYear int) error {
 	}
 
 	return nil
+}
+
+// getTeamIDByName busca o team_id a partir do nome do time
+func getTeamIDByName(teamName string) (int, error) {
+	var teamID int
+	query := "SELECT team_id FROM teams WHERE school = ?"
+	err := database.DB.QueryRow(query, teamName).Scan(&teamID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("time não encontrado: %v", teamName)
+		}
+		return 0, fmt.Errorf("erro ao buscar o team_id: %v", err)
+	}
+	return teamID, nil
 }

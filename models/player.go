@@ -12,6 +12,7 @@ type Player struct {
 	RecruitmentYear   int    `json:"recruitment_year"` // Ano de recrutamento
 	TeamID            int    `json:"team_id"`
 	RecruitmentSource string `json:"recruitment_source"` // Fonte de recrutamento
+	TeamName          string `json:"team_name"`
 }
 
 type PlayerGameStats struct {
